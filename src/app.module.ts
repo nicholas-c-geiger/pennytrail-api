@@ -12,7 +12,8 @@ import { AppService } from './app.service';
       isGlobal: true,
       load: [appConfig, databaseConfig],
     }),
-    PrismaModule],
+    PrismaModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })
