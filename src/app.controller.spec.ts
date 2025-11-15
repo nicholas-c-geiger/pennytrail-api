@@ -37,13 +37,13 @@ describe('AppController', () => {
   });
 
   describe('getUsers', () => {
-  it('should return users from PrismaService', async () => {
-    const users = await appController.getUsers();
-    expect(users).toEqual([
-      { id: 1, name: 'Alice' },
-      { id: 2, name: 'Bob' },
-    ]);
-    expect(mockPrismaService.user.findMany).toHaveBeenCalled();
+    it('should return users from PrismaService', async () => {
+      const users = await appController.getUsers();
+      expect(users).toEqual([
+        { id: 1, name: 'Alice' },
+        { id: 2, name: 'Bob' },
+      ]);
+      expect(mockPrismaService.user.findMany).toHaveBeenCalled();
+    });
   });
-});
 });
