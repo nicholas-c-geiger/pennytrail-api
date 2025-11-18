@@ -1,4 +1,15 @@
-import { Controller, Get, UseGuards, Post, Body, Param, Put, Delete, ParseIntPipe, HttpCode } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  UseGuards,
+  Post,
+  Body,
+  Param,
+  Put,
+  Delete,
+  ParseIntPipe,
+  HttpCode,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
@@ -47,7 +58,7 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() updateUserDto: UpdateUserDto
   ): Promise<User> {
     return this.usersService.update(id, updateUserDto);
   }

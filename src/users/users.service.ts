@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -30,11 +35,11 @@ export class UsersService {
       return await this.prisma.user.create({
         data: createUserDto,
       });
-    } catch (err) {
+    } catch (err: unknown) {
       if (
         err instanceof Prisma.PrismaClientKnownRequestError &&
         // Unique constraint failed
-        (err as any).code === 'P2002'
+        err.code === 'P2002'
       ) {
         throw new ConflictException('A user with that email already exists');
       }
@@ -48,17 +53,11 @@ export class UsersService {
         where: { id },
         data: updateUserDto,
       });
-    } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        (err as any).code === 'P2025'
-      ) {
+    } catch (err: unknown) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        (err as any).code === 'P2002'
-      ) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         throw new ConflictException('Unique constraint violation');
       }
       throw new InternalServerErrorException();
@@ -71,11 +70,8 @@ export class UsersService {
         where: { id },
       });
       return;
-    } catch (err) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        (err as any).code === 'P2025'
-      ) {
+    } catch (err: unknown) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
       throw new InternalServerErrorException();

@@ -2,6 +2,8 @@ import { NotFoundException, ConflictException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 describe('UsersController', () => {
   let usersController: UsersController;
@@ -15,7 +17,7 @@ describe('UsersController', () => {
       if (id === 1) return { id: 1, name: 'Alice' };
       throw new NotFoundException(`User with ID ${id} not found`);
     }),
-    create: jest.fn().mockImplementation(async (dto) => ({ id: 3, ...dto })),
+    create: jest.fn().mockImplementation(async (dto: CreateUserDto) => ({ id: 3, ...dto })),
     update: jest.fn().mockImplementation(async (id: number, dto) => {
       if (id !== 1) throw new NotFoundException(`User with ID ${id} not found`);
       return { id, ...dto };
@@ -70,39 +72,43 @@ describe('UsersController', () => {
 
   describe('create', () => {
     it('should create a user', async () => {
-      const dto = { name: 'Charlie', email: 'c@example.com' };
-      const created = await usersController.create(dto as any);
+      const dto: CreateUserDto = { name: 'Charlie', email: 'c@example.com' };
+      const created = await usersController.create(dto);
       expect(created).toEqual({ id: 3, ...dto });
       expect(mockUsersService.create).toHaveBeenCalledWith(dto);
     });
 
     it('should surface conflict error from service', async () => {
       mockUsersService.create.mockRejectedValueOnce(new ConflictException('duplicate'));
-      await expect(usersController.create({ name: 'X', email: 'x@x.com' } as any)).rejects.toBeInstanceOf(ConflictException);
+      await expect(
+        usersController.create({ name: 'X', email: 'x@x.com' } as CreateUserDto)
+      ).rejects.toBeInstanceOf(ConflictException);
     });
   });
 
   describe('update', () => {
     it('should update a user when exists', async () => {
-      const dto = { name: 'Alice Updated' };
-      const updated = await usersController.update(1 as any, dto as any);
+      const dto: UpdateUserDto = { name: 'Alice Updated' } as UpdateUserDto;
+      const updated = await usersController.update(1, dto);
       expect(updated).toEqual({ id: 1, ...dto });
       expect(mockUsersService.update).toHaveBeenCalledWith(1, dto);
     });
 
     it('should throw NotFoundException when updating non-existent user', async () => {
-      await expect(usersController.update(99 as any, { name: 'x' } as any)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(
+        usersController.update(99, { name: 'x' } as UpdateUserDto)
+      ).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 
   describe('remove', () => {
     it('should remove a user when exists', async () => {
-      await expect(usersController.remove(1 as any)).resolves.toBeUndefined();
+      await expect(usersController.remove(1)).resolves.toBeUndefined();
       expect(mockUsersService.remove).toHaveBeenCalledWith(1);
     });
 
     it('should throw NotFoundException when removing non-existent user', async () => {
-      await expect(usersController.remove(99 as any)).rejects.toBeInstanceOf(NotFoundException);
+      await expect(usersController.remove(99)).rejects.toBeInstanceOf(NotFoundException);
     });
   });
 });
