@@ -50,12 +50,33 @@ $ npm run start:prod
 # unit tests
 $ npm run test
 
-# e2e tests
-$ npm run test:e2e
-
 # test coverage
 $ npm run test:cov
 ```
+
+## e2e tests (run locally)
+
+The CI does not run e2e tests. To run e2e tests locally you'll need a Postgres instance (Docker is easiest):
+
+```powershell
+# start a postgres container
+docker run -d --name pennytrail-test -e POSTGRES_USER=test -e POSTGRES_PASSWORD=testpassword -e POSTGRES_DB=testdb -p 5432:5432 postgres:15
+
+# set DATABASE_URL for PowerShell
+$env:DATABASE_URL = "postgresql://test:testpassword@localhost:5432/testdb"
+
+# generate prisma client and reset test db
+npx prisma generate
+npx prisma migrate reset --force
+
+# run e2e tests
+npm run test:e2e -- --runInBand
+
+# cleanup
+docker stop pennytrail-test; docker rm pennytrail-test
+```
+
+Replace the DB credentials above as needed. Do not use `migrate reset` in production; it's intended for ephemeral test databases.
 
 ## Deployment
 
