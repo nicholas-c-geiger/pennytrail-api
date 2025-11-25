@@ -117,3 +117,22 @@ Nest is an MIT-licensed open source project. It can grow thanks to the sponsors 
 ## License
 
 Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+
+## Secrets & environment
+
+- `.env.example`: contains example environment variables. Copy it to `.env` and fill in real values.
+- **Do not commit** your `.env` file. The repository already ignores `.env` via `.gitignore`.
+- For CI (GitHub Actions) or when publishing to GitHub, store secrets in the repository settings (`Settings -> Secrets and variables -> Actions`) and reference them in workflows instead of committing them.
+
+Example local workflow (PowerShell):
+
+```powershell
+# copy example and set your secret locally (do this on your machine only)
+copy .env.example .env
+(Get-Content .env) -replace 'POSTGRES_PASSWORD=change_me','POSTGRES_PASSWORD=your_secret' | Set-Content .env
+
+# start services
+docker compose up -d --build
+```
+
+For production, consider using Docker secrets or your platform's secret manager and avoid storing production credentials in plain `.env` files.
