@@ -8,8 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
-import { Prisma } from '@prisma/client';
 
+function isPrismaKnownRequestError(err: unknown): err is { code?: string } {
+  return typeof err === 'object' && err !== null && 'code' in err;
+}
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
@@ -36,11 +38,7 @@ export class UsersService {
         data: createUserDto,
       });
     } catch (err: unknown) {
-      if (
-        err instanceof Prisma.PrismaClientKnownRequestError &&
-        // Unique constraint failed
-        err.code === 'P2002'
-      ) {
+      if (isPrismaKnownRequestError(err) && err.code === 'P2002') {
         throw new ConflictException('A user with that email already exists');
       }
       throw new InternalServerErrorException();
@@ -54,10 +52,10 @@ export class UsersService {
         data: updateUserDto,
       });
     } catch (err: unknown) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      if (isPrismaKnownRequestError(err) && err.code === 'P2025') {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      if (isPrismaKnownRequestError(err) && err.code === 'P2002') {
         throw new ConflictException('Unique constraint violation');
       }
       throw new InternalServerErrorException();
@@ -71,7 +69,7 @@ export class UsersService {
       });
       return;
     } catch (err: unknown) {
-      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2025') {
+      if (isPrismaKnownRequestError(err) && err.code === 'P2025') {
         throw new NotFoundException(`User with ID ${id} not found`);
       }
       throw new InternalServerErrorException();

@@ -17,15 +17,13 @@ const mockPrisma = {
   },
 };
 
-function prismaKnownError(code: string, message = ''): Prisma.PrismaClientKnownRequestError {
-  // Create an object with the same prototype as PrismaClientKnownRequestError
-  // so `instanceof Prisma.PrismaClientKnownRequestError` returns true in the service.
+function prismaKnownError(code: string, message = ''): Error & { code?: string; message?: string } {
+  // Create an object with the same prototype as Prisma's runtime error so
+  // `instanceof` checks in the service behave similarly without importing
+  // the non-exported Prisma type.
   const maybeCtor = (Prisma as unknown as Record<string, unknown>)['PrismaClientKnownRequestError'];
   const proto = (maybeCtor && (maybeCtor as { prototype?: unknown }).prototype) ?? Error.prototype;
-  const err = Object.create(proto) as Prisma.PrismaClientKnownRequestError & {
-    code?: string;
-    message?: string;
-  };
+  const err = Object.create(proto) as { code?: string; message?: string } & Error;
   err.message = message;
   err.code = code;
   return err;
