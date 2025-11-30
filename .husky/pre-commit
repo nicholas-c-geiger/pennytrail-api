@@ -1,5 +1,7 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-# Run lint-staged on staged files
-npx --no -- lint-staged
+# Cross-platform invocation: use npx.cmd on Windows (Git Bash), otherwise use npx
+if [ -n "$WINDIR" ]; then
+	npx.cmd --no -- lint-staged
+else
+	npx --no -- lint-staged
+fi

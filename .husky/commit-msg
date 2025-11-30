@@ -1,5 +1,7 @@
 #!/bin/sh
-. "$(dirname "$0")/_/husky.sh"
-
-# Validate commit message with commitlint
-npx --no -- commitlint --edit "$1"
+# Cross-platform invocation: use npx.cmd on Windows (Git Bash), otherwise use npx
+if [ -n "$WINDIR" ]; then
+	npx.cmd --no -- commitlint --edit "$1"
+else
+	npx --no -- commitlint --edit "$1"
+fi
