@@ -6,7 +6,7 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "prepare": "husky install",
+    "prepare": "husky install .husky",
     "build": "nest build",
     "format": "prettier --write src/**/*.{ts,tsx,json,md}",
     "start": "nest start",
