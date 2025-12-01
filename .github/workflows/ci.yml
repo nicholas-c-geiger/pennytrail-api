@@ -61,10 +61,6 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
-    env:
-      # Compose DATABASE_URL from repository secrets only.
-      DATABASE_URL: postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?schema=public
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -91,14 +87,14 @@ jobs:
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Generate Prisma client
         run: npx prisma generate
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Run tests
         run: npm test --silent
         env:
-          DATABASE_URL: ${{ env.DATABASE_URL }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
