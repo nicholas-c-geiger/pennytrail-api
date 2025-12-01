@@ -25,10 +25,8 @@ jobs:
       - name: Generate Prisma client
         run: npx prisma generate
         env:
-          # Provide a DATABASE_URL so Prisma can load the datasource during generate.
-          # This does not need to point to a running DB for code generation to succeed.
-          # Prefer a repo secret named `DATABASE_URL`, fall back to a harmless local placeholder.
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@127.0.0.1:5432/postgres?schema=public' }}
+          # Use repository secret `DATABASE_URL` only; do not fall back to defaults.
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
       - name: Lint
         run: npm run lint
@@ -53,6 +51,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
+          # Use repository secrets only; this service will expect secrets to be set.
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
@@ -61,15 +60,10 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          # Prefer repository secrets when set, otherwise fall back to safe defaults for CI.
-          POSTGRES_USER: ${{ secrets.POSTGRES_USER || 'postgres' }}
-          POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD || 'postgres' }}
-          POSTGRES_DB: ${{ secrets.POSTGRES_DB || 'postgres' }}
 
     env:
-      # Point at the service container `postgres` with the CI defaults above.
-      # Compose DATABASE_URL from secrets when available, otherwise fall back to CI defaults.
-      DATABASE_URL: postgres://${{ secrets.POSTGRES_USER || 'postgres' }}:${{ secrets.POSTGRES_PASSWORD || 'postgres' }}@postgres:5432/${{ secrets.POSTGRES_DB || 'postgres' }}?schema=public
+      # Compose DATABASE_URL from repository secrets only.
+      DATABASE_URL: postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?schema=public
 
     steps:
       - name: Checkout
@@ -89,7 +83,7 @@ jobs:
       - name: Wait for Postgres
         run: |
           for i in {1..30}; do
-            pg_isready -h postgres -p 5432 -U ${{ secrets.POSTGRES_USER || 'postgres' }} && break
+            pg_isready -h postgres -p 5432 -U ${{ secrets.POSTGRES_USER }} && break
             echo "Waiting for Postgres..."
             sleep 2
           done
