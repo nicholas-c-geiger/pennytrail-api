@@ -122,11 +122,45 @@ jobs:
 
       - name: Wait for Postgres
         run: |
-          for i in {1..30}; do
-            pg_isready -h postgres -p 5432 -U ${{ secrets.POSTGRES_USER }} && break
-            echo "Waiting for Postgres..."
+          MAX=60
+          echo "Waiting up to $MAX attempts for Postgres to accept TCP connections..."
+          for i in $(seq 1 $MAX); do
+            echo "Attempt $i: $(date) - checking TCP..."
+            if pg_isready -h postgres -p 5432; then
+              echo "Postgres TCP OK"
+              break
+            fi
             sleep 2
           done
+
+          if ! pg_isready -h postgres -p 5432; then
+            echo "Postgres did not accept TCP connections after $MAX attempts"
+            echo '--- docker ps (all) ---'
+            docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}" || true
+            CONTAINERS=$(docker ps -a -q --filter ancestor=postgres:16 || true)
+            if [ -n "$CONTAINERS" ]; then
+              for c in $CONTAINERS; do
+                echo "--- logs for container $c ---"
+                docker logs --tail 400 $c || true
+              done
+            fi
+            exit 1
+          fi
+
+          echo "Postgres is accepting TCP; performing a short auth check..."
+          PGPASSWORD="${{ secrets.POSTGRES_PASSWORD }}" psql -h postgres -U "${{ secrets.POSTGRES_USER }}" -d "${{ secrets.POSTGRES_DB }}" -c '\q'
+          if [ $? -ne 0 ]; then
+            echo "Auth check failed - printing container logs for debugging"
+            CONTAINERS=$(docker ps -a -q --filter ancestor=postgres:16 || true)
+            if [ -n "$CONTAINERS" ]; then
+              for c in $CONTAINERS; do
+                echo "--- logs for container $c ---"
+                docker logs --tail 400 $c || true
+              done
+            fi
+            exit 1
+          fi
+          echo "Postgres is ready and auth succeeded."
 
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
