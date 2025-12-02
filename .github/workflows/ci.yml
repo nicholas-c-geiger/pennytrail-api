@@ -156,16 +156,15 @@ jobs:
               echo "Postgres TCP OK after /etc/hosts update"
             else
               echo "pg_isready still reports no response after /etc/hosts fallback"
-            fi
-            echo '--- docker ps (all) ---'
-            docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}" || true
-            CONTAINERS=$(docker ps -a -q --filter ancestor=postgres:16 || true)
-            if [ -n "$CONTAINERS" ]; then
-              for c in $CONTAINERS; do
-                echo "--- logs for container $c ---"
-                docker logs --tail 400 $c || true
-              done
-            fi
+              echo '--- docker ps (all) ---'
+              docker ps -a --format "table {{.ID}}\t{{.Image}}\t{{.Names}}\t{{.Status}}" || true
+              CONTAINERS=$(docker ps -a -q --filter ancestor=postgres:16 || true)
+              if [ -n "$CONTAINERS" ]; then
+                for c in $CONTAINERS; do
+                  echo "--- logs for container $c ---"
+                  docker logs --tail 400 $c || true
+                done
+              fi
               echo '--- inspect postgres containers for diagnosis ---'
               if [ -n "$CONTAINERS" ]; then
                 for c in $CONTAINERS; do
@@ -174,6 +173,7 @@ jobs:
                 done
               fi
               exit 1
+            fi
           fi
 
           echo "Postgres is accepting TCP; performing a short auth check..."
