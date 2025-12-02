@@ -166,7 +166,14 @@ jobs:
                 docker logs --tail 400 $c || true
               done
             fi
-            exit 1
+              echo '--- inspect postgres containers for diagnosis ---'
+              if [ -n "$CONTAINERS" ]; then
+                for c in $CONTAINERS; do
+                  echo "--- docker inspect for $c (State, Config.Env, Args, Mounts) ---"
+                  docker inspect --format '{"State":{{json .State}}, "Env":{{json .Config.Env}}, "Args":{{json .Args}}, "Mounts":{{json .Mounts}}}' $c || true
+                done
+              fi
+              exit 1
           fi
 
           echo "Postgres is accepting TCP; performing a short auth check..."
