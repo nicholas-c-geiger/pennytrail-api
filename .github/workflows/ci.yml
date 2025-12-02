@@ -76,6 +76,19 @@ jobs:
       - name: Install PostgreSQL client (pg_isready)
         run: sudo apt-get update ; sudo apt-get install -y postgresql-client
 
+      - name: Debug Postgres connectivity
+        run: |
+          echo "Checking presence of secrets (values are masked):"
+          if [ -z "${{ secrets.POSTGRES_USER }}" ]; then echo "POSTGRES_USER: MISSING"; else echo "POSTGRES_USER: present"; fi
+          if [ -z "${{ secrets.POSTGRES_PASSWORD }}" ]; then echo "POSTGRES_PASSWORD: MISSING"; else echo "POSTGRES_PASSWORD: present"; fi
+          if [ -z "${{ secrets.POSTGRES_DB }}" ]; then echo "POSTGRES_DB: MISSING"; else echo "POSTGRES_DB: present"; fi
+
+          echo "Attempting direct psql connection (may fail until service is ready):"
+          PGPASSWORD="${{ secrets.POSTGRES_PASSWORD }}" psql -h postgres -U "${{ secrets.POSTGRES_USER }}" -d "${{ secrets.POSTGRES_DB }}" -c '\l' || true
+
+          echo "Running pg_isready once for visibility:"
+          pg_isready -h postgres -p 5432 -U "${{ secrets.POSTGRES_USER }}" || true
+
       - name: Wait for Postgres
         run: |
           for i in {1..30}; do
