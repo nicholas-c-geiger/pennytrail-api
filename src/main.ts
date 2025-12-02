@@ -27,7 +27,7 @@ async function bootstrap() {
     .addBearerAuth({ type: 'http', scheme: 'bearer', bearerFormat: 'JWT' })
     .build();
 
-  // Apply global prefix before generating Swagger document so paths include the prefix
+  // Apply global prefix before generating Swagger document so paths include the prefix.
   app.setGlobalPrefix('api/v1');
 
   const document = SwaggerModule.createDocument(app, config);
