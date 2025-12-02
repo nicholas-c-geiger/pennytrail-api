@@ -47,6 +47,9 @@ jobs:
   db-test:
     name: Integration tests (Postgres)
     runs-on: ubuntu-latest
+    env:
+      # Compose DATABASE_URL from repository secrets so the host is the service name `postgres`.
+      DATABASE_URL: postgres://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@postgres:5432/${{ secrets.POSTGRES_DB }}?schema=public
     services:
       postgres:
         image: postgres:16
@@ -76,6 +79,17 @@ jobs:
       - name: Install PostgreSQL client (pg_isready)
         run: sudo apt-get update ; sudo apt-get install -y postgresql-client
 
+      - name: Debug Postgres connectivity (DNS + pg_isready)
+        run: |
+          echo '--- getent hosts postgres ---'
+          getent hosts postgres || true
+          echo '--- nslookup postgres (if available) ---'
+          (nslookup postgres || true)
+          echo '--- single pg_isready check ---'
+          pg_isready -h postgres -p 5432 -U "${{ secrets.POSTGRES_USER }}" || true
+          echo '--- try psql (may fail until ready) ---'
+          PGPASSWORD="${{ secrets.POSTGRES_PASSWORD }}" psql -h postgres -U "${{ secrets.POSTGRES_USER }}" -d "${{ secrets.POSTGRES_DB }}" -c '\l' || true
+
       - name: Debug Postgres connectivity
         run: |
           echo "Checking presence of secrets (values are masked):"
@@ -100,14 +114,14 @@ jobs:
       - name: Run Prisma migrations
         run: npx prisma migrate deploy
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
       - name: Generate Prisma client
         run: npx prisma generate
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
 
       - name: Run tests
         run: npm test --silent
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          DATABASE_URL: ${{ env.DATABASE_URL }}
