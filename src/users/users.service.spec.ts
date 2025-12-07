@@ -42,13 +42,13 @@ describe('UsersService', () => {
   });
 
   it('findAll returns users', async () => {
-    const users = [{ id: 1, name: 'A', email: 'a@example.com' }];
+    const users = [{ id: 1, name: 'A' }];
     mockPrisma.user.findMany.mockResolvedValue(users);
     await expect(service.findAll()).resolves.toEqual(users);
   });
 
   it('findOne returns user or throws NotFoundException', async () => {
-    const user = { id: 1, name: 'A', email: 'a@example.com' };
+    const user = { id: 1, name: 'A' };
     mockPrisma.user.findUnique.mockResolvedValue(user);
     await expect(service.findOne(1)).resolves.toEqual(user);
 
@@ -57,25 +57,23 @@ describe('UsersService', () => {
   });
 
   it('create returns created user or throws ConflictException on unique violation', async () => {
-    const created = { id: 10, name: 'E2E', email: 'e2e@example.com' };
+    const created = { id: 10, name: 'E2E' };
     mockPrisma.user.create.mockResolvedValue(created);
-    await expect(
-      service.create({ name: 'E2E', email: 'e2e@example.com' } as CreateUserDto)
-    ).resolves.toEqual(created);
+    await expect(service.create({ name: 'E2E' } as CreateUserDto)).resolves.toEqual(created);
 
     mockPrisma.user.create.mockRejectedValue(prismaKnownError('P2002'));
-    await expect(
-      service.create({ name: 'E2E', email: 'e2e@example.com' } as CreateUserDto)
-    ).rejects.toThrow(ConflictException);
+    await expect(service.create({ name: 'E2E' } as CreateUserDto)).rejects.toThrow(
+      ConflictException
+    );
 
     mockPrisma.user.create.mockRejectedValue(new Error('boom'));
-    await expect(
-      service.create({ name: 'E2E', email: 'e2e@example.com' } as CreateUserDto)
-    ).rejects.toThrow(InternalServerErrorException);
+    await expect(service.create({ name: 'E2E' } as CreateUserDto)).rejects.toThrow(
+      InternalServerErrorException
+    );
   });
 
   it('update returns updated user or throws appropriate exceptions', async () => {
-    const updated = { id: 1, name: 'B', email: 'b@example.com' };
+    const updated = { id: 1, name: 'B' };
     mockPrisma.user.update.mockResolvedValue(updated);
     await expect(service.update(1, { name: 'B' } as UpdateUserDto)).resolves.toEqual(updated);
 
@@ -85,7 +83,7 @@ describe('UsersService', () => {
     );
 
     mockPrisma.user.update.mockRejectedValue(prismaKnownError('P2002'));
-    await expect(service.update(1, { email: 'dup@example.com' } as UpdateUserDto)).rejects.toThrow(
+    await expect(service.update(1, { name: 'dup' } as UpdateUserDto)).rejects.toThrow(
       ConflictException
     );
   });

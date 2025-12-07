@@ -29,7 +29,7 @@ describe('AppController (e2e)', () => {
 
   it('POST /api/v1/users - validation and HttpCode(201)', async () => {
     // override UsersService to avoid DB operations
-    const createdUser = { id: 10, name: 'E2E', email: 'e2e@example.com' };
+    const createdUser = { id: 10, name: 'E2E' };
     const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [UsersModule] })
       .overrideProvider(UsersService)
       .useValue({ create: jest.fn().mockResolvedValue(createdUser) })
@@ -40,14 +40,11 @@ describe('AppController (e2e)', () => {
     app2.setGlobalPrefix('api/v1');
     await app2.init();
 
-    // invalid payload -> 400
-    await request(app2.getHttpServer()).post('/api/v1/users').send({ name: 'NoEmail' }).expect(400);
+    // invalid payload -> 400 (missing required `name`)
+    await request(app2.getHttpServer()).post('/api/v1/users').send({}).expect(400);
 
     // valid payload -> 201
-    const res = await request(app2.getHttpServer())
-      .post('/api/v1/users')
-      .send({ name: 'E2E', email: 'e2e@example.com' })
-      .expect(201);
+    const res = await request(app2.getHttpServer()).post('/api/v1/users').send({ name: 'E2E' }).expect(201);
 
     expect(res.body).toMatchObject(createdUser as any);
     await app2.close();

@@ -5,6 +5,7 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { Prisma } from '@prisma/client';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
@@ -34,12 +35,14 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      return await this.prisma.user.create({
-        data: createUserDto,
-      });
+      const data: Prisma.UserCreateInput = {
+        name: createUserDto.name,
+      };
+
+      return await this.prisma.user.create({ data });
     } catch (err: unknown) {
       if (isPrismaKnownRequestError(err) && err.code === 'P2002') {
-        throw new ConflictException('A user with that email already exists');
+        throw new ConflictException('Unique constraint violation');
       }
       throw new InternalServerErrorException();
     }
@@ -47,9 +50,13 @@ export class UsersService {
 
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
     try {
+      const data: Prisma.UserUpdateInput = {
+        name: (updateUserDto as { name?: string | null }).name ?? undefined,
+      };
+
       return await this.prisma.user.update({
         where: { id },
-        data: updateUserDto,
+        data,
       });
     } catch (err: unknown) {
       if (isPrismaKnownRequestError(err) && err.code === 'P2025') {

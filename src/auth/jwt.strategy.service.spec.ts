@@ -27,7 +27,7 @@ describe('JwtStrategy', () => {
   });
 
   it('should return the payload on validate', async () => {
-    const payload: JwtPayload = { id: '1', email: 'test@test.com' };
+    const payload: JwtPayload = { id: '1', name: 'Test User' };
     expect(await service.validate(payload)).toEqual(payload);
   });
 });

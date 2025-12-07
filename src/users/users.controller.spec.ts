@@ -72,7 +72,7 @@ describe('UsersController', () => {
 
   describe('create', () => {
     it('should create a user', async () => {
-      const dto: CreateUserDto = { name: 'Charlie', email: 'c@example.com' };
+      const dto: CreateUserDto = { name: 'Charlie' };
       const created = await usersController.create(dto);
       expect(created).toEqual({ id: 3, ...dto });
       expect(mockUsersService.create).toHaveBeenCalledWith(dto);
@@ -80,9 +80,9 @@ describe('UsersController', () => {
 
     it('should surface conflict error from service', async () => {
       mockUsersService.create.mockRejectedValueOnce(new ConflictException('duplicate'));
-      await expect(
-        usersController.create({ name: 'X', email: 'x@x.com' } as CreateUserDto)
-      ).rejects.toBeInstanceOf(ConflictException);
+      await expect(usersController.create({ name: 'X' } as CreateUserDto)).rejects.toBeInstanceOf(
+        ConflictException
+      );
     });
   });
 
