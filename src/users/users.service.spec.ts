@@ -1,5 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { NotFoundException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import {
+  NotFoundException,
+  ConflictException,
+  InternalServerErrorException,
+  PreconditionFailedException,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -13,6 +18,7 @@ const mockPrisma = {
     findUnique: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
+    upsert: jest.fn(),
     delete: jest.fn(),
   },
 };
@@ -59,32 +65,41 @@ describe('UsersService', () => {
   it('create returns created user or throws ConflictException on unique violation', async () => {
     const created = { id: 10, name: 'E2E' };
     mockPrisma.user.create.mockResolvedValue(created);
-    await expect(service.create({ name: 'E2E' } as CreateUserDto)).resolves.toEqual(created);
+    await expect(service.create({ id: 10, name: 'E2E' } as CreateUserDto)).resolves.toEqual(
+      created
+    );
 
     mockPrisma.user.create.mockRejectedValue(prismaKnownError('P2002'));
-    await expect(service.create({ name: 'E2E' } as CreateUserDto)).rejects.toThrow(
+    await expect(service.create({ id: 10, name: 'E2E' } as CreateUserDto)).rejects.toThrow(
       ConflictException
     );
 
     mockPrisma.user.create.mockRejectedValue(new Error('boom'));
-    await expect(service.create({ name: 'E2E' } as CreateUserDto)).rejects.toThrow(
+    await expect(service.create({ id: 10, name: 'E2E' } as CreateUserDto)).rejects.toThrow(
       InternalServerErrorException
     );
   });
 
-  it('update returns updated user or throws appropriate exceptions', async () => {
+  it('update upserts when createOnly is false, and create-only behavior when requested', async () => {
     const updated = { id: 1, name: 'B' };
-    mockPrisma.user.update.mockResolvedValue(updated);
+    mockPrisma.user.upsert.mockResolvedValue(updated);
     await expect(service.update(1, { name: 'B' } as UpdateUserDto)).resolves.toEqual(updated);
 
-    mockPrisma.user.update.mockRejectedValue(prismaKnownError('P2025'));
-    await expect(service.update(2, { name: 'X' } as UpdateUserDto)).rejects.toThrow(
-      NotFoundException
-    );
-
-    mockPrisma.user.update.mockRejectedValue(prismaKnownError('P2002'));
+    mockPrisma.user.upsert.mockRejectedValue(prismaKnownError('P2002'));
     await expect(service.update(1, { name: 'dup' } as UpdateUserDto)).rejects.toThrow(
       ConflictException
+    );
+
+    // createOnly -> use create
+    const created = { id: 10, name: 'E2E' };
+    mockPrisma.user.create.mockResolvedValue(created);
+    await expect(service.update(10, { name: 'E2E' } as UpdateUserDto, true)).resolves.toEqual(
+      created
+    );
+
+    mockPrisma.user.create.mockRejectedValue(prismaKnownError('P2002'));
+    await expect(service.update(10, { name: 'E2E' } as UpdateUserDto, true)).rejects.toThrow(
+      PreconditionFailedException
     );
   });
 

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   InternalServerErrorException,
+  PreconditionFailedException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Prisma } from '@prisma/client';
@@ -35,7 +36,8 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto): Promise<User> {
     try {
-      const data: Prisma.UserCreateInput = {
+      const data: Prisma.UserUncheckedCreateInput = {
+        id: createUserDto.id,
         name: createUserDto.name,
       };
 
@@ -48,20 +50,32 @@ export class UsersService {
     }
   }
 
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    try {
-      const data: Prisma.UserUpdateInput = {
-        name: (updateUserDto as { name?: string | null }).name ?? undefined,
-      };
+  async update(id: number, updateUserDto: UpdateUserDto, createOnly = false): Promise<User> {
+    const name = (updateUserDto as { name?: string | null }).name ?? undefined;
 
-      return await this.prisma.user.update({
+    if (createOnly) {
+      try {
+        const data: Prisma.UserUncheckedCreateInput = {
+          id,
+          name,
+        };
+        return await this.prisma.user.create({ data });
+      } catch (err: unknown) {
+        if (isPrismaKnownRequestError(err) && err.code === 'P2002') {
+          // Resource exists — map to 412 Precondition Failed for If-None-Match semantics
+          throw new PreconditionFailedException('Resource already exists');
+        }
+        throw new InternalServerErrorException();
+      }
+    }
+
+    try {
+      return await this.prisma.user.upsert({
         where: { id },
-        data,
+        create: { id, name },
+        update: { name },
       });
     } catch (err: unknown) {
-      if (isPrismaKnownRequestError(err) && err.code === 'P2025') {
-        throw new NotFoundException(`User with ID ${id} not found`);
-      }
       if (isPrismaKnownRequestError(err) && err.code === 'P2002') {
         throw new ConflictException('Unique constraint violation');
       }

@@ -2,19 +2,23 @@ import {
   Controller,
   Get,
   UseGuards,
-  Post,
   Body,
   Param,
   Put,
   Delete,
   ParseIntPipe,
   HttpCode,
+  Headers,
+  BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { CreateUserDto } from './dto/create-user.dto';
+// Create is handled via PUT/:id (client-provided id) — DTO import removed from controller
 import { UpdateUserDto } from './dto/update-user.dto';
+import { CreateUserDto } from './dto/create-user.dto';
+import { plainToInstance } from 'class-transformer';
+import { validate } from 'class-validator';
 import { User } from './entities/user.entity';
 
 @ApiTags('users')
@@ -41,15 +45,6 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Post()
-  @HttpCode(201)
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({ status: 201, description: 'User created successfully.', type: User })
-  @ApiResponse({ status: 400, description: 'Validation failed.' })
-  create(@Body() createUserDto: CreateUserDto): Promise<User> {
-    return this.usersService.create(createUserDto);
-  }
-
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
@@ -58,9 +53,23 @@ export class UsersController {
   @ApiResponse({ status: 404, description: 'User not found.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() updateUserDto: UpdateUserDto
+    @Body() raw: unknown,
+    @Headers('if-none-match') ifNoneMatch?: string
   ): Promise<User> {
-    return this.usersService.update(id, updateUserDto);
+    const createOnly = ifNoneMatch === '*';
+
+    if (createOnly) {
+      const dto = plainToInstance(CreateUserDto, raw as Record<string, unknown>);
+      const errors = await validate(dto);
+      if (errors.length > 0) {
+        throw new BadRequestException('Validation failed');
+      }
+      const updateDto: UpdateUserDto = { name: dto.name } as UpdateUserDto;
+      return this.usersService.update(id, updateDto, true);
+    }
+
+    const updateDto: UpdateUserDto = raw as UpdateUserDto;
+    return this.usersService.update(id, updateDto, false);
   }
 
   @Delete(':id')

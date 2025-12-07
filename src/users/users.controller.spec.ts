@@ -1,4 +1,4 @@
-import { NotFoundException, ConflictException } from '@nestjs/common';
+import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
@@ -17,9 +17,8 @@ describe('UsersController', () => {
       if (id === 1) return { id: 1, name: 'Alice' };
       throw new NotFoundException(`User with ID ${id} not found`);
     }),
-    create: jest.fn().mockImplementation(async (dto: CreateUserDto) => ({ id: 3, ...dto })),
+    create: jest.fn().mockImplementation(async (dto: CreateUserDto) => ({ ...dto })),
     update: jest.fn().mockImplementation(async (id: number, dto) => {
-      if (id !== 1) throw new NotFoundException(`User with ID ${id} not found`);
       return { id, ...dto };
     }),
     remove: jest.fn().mockImplementation(async (id: number) => {
@@ -70,34 +69,19 @@ describe('UsersController', () => {
     });
   });
 
-  describe('create', () => {
-    it('should create a user', async () => {
-      const dto: CreateUserDto = { name: 'Charlie' };
-      const created = await usersController.create(dto);
-      expect(created).toEqual({ id: 3, ...dto });
-      expect(mockUsersService.create).toHaveBeenCalledWith(dto);
-    });
-
-    it('should surface conflict error from service', async () => {
-      mockUsersService.create.mockRejectedValueOnce(new ConflictException('duplicate'));
-      await expect(usersController.create({ name: 'X' } as CreateUserDto)).rejects.toBeInstanceOf(
-        ConflictException
-      );
-    });
-  });
+  // POST creation removed — creation should be done via PUT /:id. Controller tests focus on existing endpoints.
 
   describe('update', () => {
     it('should update a user when exists', async () => {
       const dto: UpdateUserDto = { name: 'Alice Updated' } as UpdateUserDto;
       const updated = await usersController.update(1, dto);
       expect(updated).toEqual({ id: 1, ...dto });
-      expect(mockUsersService.update).toHaveBeenCalledWith(1, dto);
+      expect(mockUsersService.update).toHaveBeenCalledWith(1, dto, false);
     });
 
-    it('should throw NotFoundException when updating non-existent user', async () => {
-      await expect(
-        usersController.update(99, { name: 'x' } as UpdateUserDto)
-      ).rejects.toBeInstanceOf(NotFoundException);
+    it('should create the user when it does not exist (upsert behavior)', async () => {
+      const dto: UpdateUserDto = { name: 'x' } as UpdateUserDto;
+      await expect(usersController.update(99, dto)).resolves.toEqual({ id: 99, ...dto });
     });
   });
 

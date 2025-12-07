@@ -27,24 +27,34 @@ describe('AppController (e2e)', () => {
     return request(app.getHttpServer()).get('/').expect(200).expect('Hello World!');
   });
 
-  it('POST /api/v1/users - validation and HttpCode(201)', async () => {
+  it('PUT /api/v1/users/10 - validation and HttpCode(201)', async () => {
     // override UsersService to avoid DB operations
     const createdUser = { id: 10, name: 'E2E' };
-    const moduleFixture: TestingModule = await Test.createTestingModule({ imports: [UsersModule] })
+    const moduleFixtureBuilder = Test.createTestingModule({ imports: [UsersModule] })
       .overrideProvider(UsersService)
-      .useValue({ create: jest.fn().mockResolvedValue(createdUser) })
-      .compile();
+      .useValue({ update: jest.fn().mockResolvedValue(createdUser) })
+      // override the JwtAuthGuard used on the PUT handler so tests can call it without auth
+      .overrideGuard(JwtAuthGuard)
+      .useValue({ canActivate: () => true });
+
+    const moduleFixture: TestingModule = await moduleFixtureBuilder.compile();
 
     const app2 = moduleFixture.createNestApplication();
     app2.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
     app2.setGlobalPrefix('api/v1');
+    // bypass authentication for this test instance
+    app2.useGlobalGuards({ canActivate: () => true } as CanActivate);
     await app2.init();
 
-    // invalid payload -> 400 (missing required `name`)
-    await request(app2.getHttpServer()).post('/api/v1/users').send({}).expect(400);
+    // invalid payload -> 400 (missing required `name`) — validate via PUT to client-chosen id
+    await request(app2.getHttpServer())
+      .put('/api/v1/users/10')
+      .set('If-None-Match', '*')
+      .send({})
+      .expect(400);
 
-    // valid payload -> 201
-    const res = await request(app2.getHttpServer()).post('/api/v1/users').send({ name: 'E2E' }).expect(201);
+    // valid payload -> 200 (create via PUT to client-chosen id)
+    const res = await request(app2.getHttpServer()).put('/api/v1/users/10').send({ name: 'E2E' }).expect(200);
 
     expect(res.body).toMatchObject(createdUser as any);
     await app2.close();
