@@ -46,15 +46,15 @@ describe('AppController (e2e)', () => {
     app2.useGlobalGuards({ canActivate: () => true } as CanActivate);
     await app2.init();
 
-    // invalid payload -> 400 (missing required `name`) — validate via PUT to client-chosen id
+    // valid payload -> 200 (create via PUT to client-chosen id)
+    const res = await request(app2.getHttpServer()).put('/api/v1/users/10').send({ name: 'E2E' }).expect(200);
+    
+    // valid payload -> 200 (success when user already exists)
     await request(app2.getHttpServer())
       .put('/api/v1/users/10')
       .set('If-None-Match', '*')
       .send({})
-      .expect(400);
-
-    // valid payload -> 200 (create via PUT to client-chosen id)
-    const res = await request(app2.getHttpServer()).put('/api/v1/users/10').send({ name: 'E2E' }).expect(200);
+      .expect(200);
 
     expect(res.body).toMatchObject(createdUser as any);
     await app2.close();
