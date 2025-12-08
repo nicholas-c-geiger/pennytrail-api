@@ -13,7 +13,16 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiHeader,
+  ApiBody,
+  ApiExtraModels,
+  getSchemaPath,
+} from '@nestjs/swagger';
 // Create is handled via PUT/:id (client-provided id) — DTO import removed from controller
 import { UpdateUserDto } from './dto/update-user.dto';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -48,18 +57,31 @@ export class UsersController {
   @Put(':id')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update a user' })
+  @ApiHeader({
+    name: 'if-none-match',
+    required: false,
+    description: 'Use "*" to indicate create-only (optional).',
+  })
+  @ApiExtraModels(CreateUserDto, UpdateUserDto)
+  @ApiBody({
+    description:
+      'When creating a user with client-chosen id send CreateUserDto with header `if-none-match: *`. Otherwise send UpdateUserDto for partial updates.',
+    schema: {
+      oneOf: [{ $ref: getSchemaPath(CreateUserDto) }, { $ref: getSchemaPath(UpdateUserDto) }],
+    },
+  })
+  @ApiOperation({ summary: 'Add or update a user' })
   @ApiResponse({ status: 200, description: 'User updated.', type: User })
   @ApiResponse({ status: 404, description: 'User not found.' })
   async update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() raw: unknown,
+    @Body() raw: UpdateUserDto,
     @Headers('if-none-match') ifNoneMatch?: string
   ): Promise<User> {
     const createOnly = ifNoneMatch === '*';
 
     if (createOnly) {
-      const dto = plainToInstance(CreateUserDto, raw as Record<string, unknown>);
+      const dto = plainToInstance(CreateUserDto, (raw ?? {}) as Record<string, unknown>);
       const errors = await validate(dto);
       if (errors.length > 0) {
         throw new BadRequestException('Validation failed');

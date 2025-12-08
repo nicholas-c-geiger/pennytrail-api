@@ -34,10 +34,11 @@ export class UsersService {
     return user;
   }
 
-  async create(createUserDto: CreateUserDto): Promise<User> {
+  // Create using explicit id (id comes from URL path when clients supply it)
+  async create(id: number, createUserDto: CreateUserDto): Promise<User> {
     try {
       const data: Prisma.UserUncheckedCreateInput = {
-        id: createUserDto.id,
+        id,
         name: createUserDto.name,
       };
 

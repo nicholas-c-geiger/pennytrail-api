@@ -65,17 +65,15 @@ describe('UsersService', () => {
   it('create returns created user or throws ConflictException on unique violation', async () => {
     const created = { id: 10, name: 'E2E' };
     mockPrisma.user.create.mockResolvedValue(created);
-    await expect(service.create({ id: 10, name: 'E2E' } as CreateUserDto)).resolves.toEqual(
-      created
-    );
+    await expect(service.create(10, { name: 'E2E' } as CreateUserDto)).resolves.toEqual(created);
 
     mockPrisma.user.create.mockRejectedValue(prismaKnownError('P2002'));
-    await expect(service.create({ id: 10, name: 'E2E' } as CreateUserDto)).rejects.toThrow(
+    await expect(service.create(10, { name: 'E2E' } as CreateUserDto)).rejects.toThrow(
       ConflictException
     );
 
     mockPrisma.user.create.mockRejectedValue(new Error('boom'));
-    await expect(service.create({ id: 10, name: 'E2E' } as CreateUserDto)).rejects.toThrow(
+    await expect(service.create(10, { name: 'E2E' } as CreateUserDto)).rejects.toThrow(
       InternalServerErrorException
     );
   });
