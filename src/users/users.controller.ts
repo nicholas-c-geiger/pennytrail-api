@@ -12,7 +12,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { VerifyJwtGuard } from '../auth/verify-jwt.guard';
 import {
   ApiBearerAuth,
   ApiTags,
@@ -36,7 +36,7 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(VerifyJwtGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'List users' })
   @ApiResponse({ status: 200, description: 'List of users', type: User, isArray: true })
@@ -45,7 +45,7 @@ export class UsersController {
   }
 
   @Get(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(VerifyJwtGuard)
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user by id' })
   @ApiResponse({ status: 200, description: 'Returns user profile.', type: User })
@@ -55,7 +55,7 @@ export class UsersController {
   }
 
   @Put(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(VerifyJwtGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: 'if-none-match',
@@ -95,7 +95,7 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(VerifyJwtGuard)
   @ApiOperation({ summary: 'Delete a user' })
   @HttpCode(204)
   @ApiBearerAuth()

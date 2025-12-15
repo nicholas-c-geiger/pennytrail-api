@@ -5,7 +5,7 @@ import { App } from 'supertest/types';
 import { AppModule } from './../src/app.module';
 import { UsersService } from '../src/users/users.service';
 import { UsersModule } from '../src/users/users.module';
-import { JwtAuthGuard } from '../src/auth/jwt-auth.guard';
+import { VerifyJwtGuard } from '../src/auth/verify-jwt.guard';
 
 describe('AppController (e2e)', () => {
   let app: INestApplication<App>;
@@ -33,8 +33,8 @@ describe('AppController (e2e)', () => {
     const moduleFixtureBuilder = Test.createTestingModule({ imports: [UsersModule] })
       .overrideProvider(UsersService)
       .useValue({ update: jest.fn().mockResolvedValue(createdUser) })
-      // override the JwtAuthGuard used on the PUT handler so tests can call it without auth
-      .overrideGuard(JwtAuthGuard)
+      // override the VerifyJwtGuard used on the PUT handler so tests can call it without auth
+      .overrideGuard(VerifyJwtGuard)
       .useValue({ canActivate: () => true });
 
     const moduleFixture: TestingModule = await moduleFixtureBuilder.compile();

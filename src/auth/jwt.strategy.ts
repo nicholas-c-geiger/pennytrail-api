@@ -7,11 +7,11 @@ import { JwtPayload } from './jwt-payload.interface';
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(private configService: ConfigService) {
-    const secret = configService.get<string>('NEXTAUTH_SECRET');
+    const secret = configService.get<string>('API_SECRET');
 
     if (!secret) {
       throw new Error(
-        'Environment variable NEXTAUTH_SECRET is required for JWT verification. Set NEXTAUTH_SECRET and restart the application.'
+        'Environment variable API_SECRET is required for JWT verification. Set API_SECRET and restart the application.'
       );
     }
 
