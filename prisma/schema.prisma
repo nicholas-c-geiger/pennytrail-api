@@ -23,7 +23,7 @@ model User {
 model Transaction {
   id         Int      @id @default(autoincrement())
   userId     Int
-  amount     Decimal @db.Decimal(19,4)
+  amountCents Int @map("amount_cents")
   description String?
   createdAt  DateTime @default(now())
 
