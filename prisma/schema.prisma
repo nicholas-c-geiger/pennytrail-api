@@ -16,5 +16,18 @@ datasource db {
 model User {
   id        Int      @id
   name      String?
+  transactions Transaction[]
   createdAt DateTime @default(now())
+}
+
+model Transaction {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  amount     Decimal @db.Decimal(19,4)
+  description String?
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("transaction")
 }
